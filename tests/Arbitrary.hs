@@ -15,11 +15,13 @@ module Arbitrary
 
 import           Control.Applicative ((<$>), (<*>))
 import           Control.Monad (liftM2, liftM3, replicateM)
-import           Data.Char (isSpace)
+import           Data.Char (isPrint, isSpace)
 import           Data.List (intersperse)
 import qualified Data.Map as M
 import           Data.Time
 import           Test.QuickCheck
+import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Gen
 
 import           Network.MPD.Commands.Types
 
@@ -27,7 +29,8 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.UTF8 as UTF8
 
 instance Arbitrary ByteString where
-  arbitrary = UTF8.fromString <$> arbitrary
+ -- arbitrary = UTF8.fromString . filter isPrint <$> arbitrary
+  arbitrary = UTF8.fromString <$> listOf arbitraryPrintableChar
 
 -- No longer provided by QuickCheck 2
 -- two :: Monad m => m a -> m (a, a)
@@ -46,7 +49,8 @@ possibly m = arbitrary >>= bool (Just <$> m) (return Nothing)
 
 -- MPD fields can't contain newlines and the parser skips initial spaces.
 field :: Gen String
-field = (filter (/= '\n') . dropWhile isSpace) <$> arbitrary
+--field = (filter (/= '\n') . dropWhile isSpace . filter isPrint) <$> arbitrary
+field = (filter (/= '\n') . dropWhile isSpace) <$> listOf arbitraryPrintableChar
 
 fieldBS :: Gen ByteString
 fieldBS = UTF8.fromString <$> field
